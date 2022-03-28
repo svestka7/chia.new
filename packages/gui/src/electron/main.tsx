@@ -109,7 +109,7 @@ if (!handleSquirrelEvent()) {
     return true;
   };
 
-  let mainWindow = null;
+  let mainWindow: BrowserWindow|null = null;
 
   const createMenu = () => Menu.buildFromTemplate(getMenuTemplate());
 
@@ -138,7 +138,7 @@ if (!handleSquirrelEvent()) {
     let isClosing = false;
 
     const createWindow = async () => {
-      if (manageDaemonLifetime(NET)) {
+      if (manageDaemonLifetime(NET) && !(await chiaEnvironment.isChiaDaemonRunning(NET))) {
         chiaEnvironment.startChiaDaemon();
       }
 
@@ -249,48 +249,58 @@ if (!handleSquirrelEvent()) {
       // if (!guessPackaged()) {
       //   mainWindow.webContents.openDevTools();
       // }
-      mainWindow.on('close', (e) => {
+      mainWindow.on('close', async (e) => {
         // if the daemon isn't local we aren't going to try to start/stop it
         if (decidedToClose || !manageDaemonLifetime(NET)) {
           return;
         }
-        e.preventDefault();
-        if (!isClosing) {
-          isClosing = true;
-          const choice = dialog.showMessageBoxSync({
-            type: 'question',
-            buttons: [
-              i18n._(/* i18n */ {id: 'No'}),
-              i18n._(/* i18n */ {id: 'Yes'}),
-            ],
-            title: i18n._(/* i18n */ {id: 'Confirm'}),
-            message: i18n._(
-              /* i18n */ {
-                id: 'Are you sure you want to quit?',
-              },
-            ),
-          });
-          if (choice == 0) {
-            isClosing = false;
-            return;
-          }
-          isClosing = false;
-          decidedToClose = true;
-          mainWindow.webContents.send('exit-daemon');
-          mainWindow.setBounds({height: 500, width: 500});
-          mainWindow.center();
-          ipcMain.on('daemon-exited', (event, args) => {
-            mainWindow.close();
 
-            openedWindows.forEach((win) => win.close());
-          });
+        e.preventDefault(); // We are closing app manually
+        if (isClosing) {
+          return;
         }
+
+        isClosing = true;
+        const choice = await dialog.showMessageBox({
+          type: 'question',
+          buttons: [
+            i18n._(/* i18n */ {id: 'No'}),
+            i18n._(/* i18n */ {id: 'Yes'}),
+          ],
+          title: i18n._(/* i18n */ {id: 'Confirm'}),
+          message: i18n._(
+            /* i18n */ {
+              id: 'Are you sure you want to quit?',
+            },
+          ),
+          checkboxChecked: false,
+          checkboxLabel: i18n._(/* i18n */ {id: 'Keep service running background'}),
+        });
+        isClosing = false;
+
+        if (choice.response == 0) {
+          return;
+        }
+        else if(choice.checkboxChecked){
+          decidedToClose = true;
+          mainWindow.close();
+          openedWindows.forEach((win) => win.close());
+          return;
+        }
+
+        decidedToClose = true;
+        mainWindow.webContents.send('exit-daemon');
+        mainWindow.setBounds({height: 500, width: 500});
+        mainWindow.center();
+        ipcMain.on('daemon-exited', (event, args) => {
+          mainWindow.close();
+          openedWindows.forEach((win) => win.close());
+        });
       });
 
 
 
-      const startUrl =
-      process.env.NODE_ENV === 'development'
+      const startUrl = isDev
         ? 'http://localhost:3000'
         : url.format({
           pathname: path.join(__dirname, '/../renderer/index.html'),
@@ -300,7 +310,6 @@ if (!handleSquirrelEvent()) {
 
       mainWindow.loadURL(startUrl);
       require("@electron/remote/main").enable(mainWindow.webContents)
-
     };
 
     const appReady = async () => {
@@ -397,7 +406,7 @@ if (!handleSquirrelEvent()) {
                 click: () => mainWindow.toggleDevTools(),
               },
               {
-                label: isSimulator 
+                label: isSimulator
                   ? i18n._(/* i18n */ { id: 'Disable Simulator' })
                   : i18n._(/* i18n */ { id: 'Enable Simulator' }),
                 click: () => toggleSimulatorMode(),
