@@ -138,7 +138,7 @@ if (!handleSquirrelEvent()) {
     let isClosing = false;
 
     const createWindow = async () => {
-      if (manageDaemonLifetime(NET) && !(await chiaEnvironment.isChiaDaemonRunning(NET))) {
+      if (manageDaemonLifetime(NET)) {
         chiaEnvironment.startChiaDaemon();
       }
 

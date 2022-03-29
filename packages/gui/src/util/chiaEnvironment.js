@@ -67,11 +67,6 @@ const getChiaVersion = () => {
   return version;
 };
 
-const isChiaDaemonRunning = async () => {
-  //@todo Implement something here
-  return false;
-};
-
 const startChiaDaemon = () => {
   let script = getScriptPath(PY_DIST_FILE);
   let processOptions = {};
@@ -140,7 +135,6 @@ const startChiaDaemon = () => {
 };
 
 module.exports = {
-  isChiaDaemonRunning,
   startChiaDaemon,
   getChiaVersion,
   guessPackaged,
