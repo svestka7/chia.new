@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ServiceName } from '@chia/api';
-import { useClientStartServiceMutation } from '../services/client';
+import {
+  useClientStartServiceMutation,
+  useNotifyServiceAlreadyStartedMutation,
+} from '../services/client';
 import { useIsServiceRunningQuery, useStopServiceMutation } from '../services/daemon';
 
 export type ServiceState = 'starting' | 'running' | 'stopping' | 'stopped';
@@ -19,7 +22,7 @@ export default function useService(service: ServiceName, options: Options): {
   error?: Error | unknown;
   service: ServiceName;
 } {
-  const { 
+  const {
     keepState,
     disabled = false,
   } = options;
@@ -28,6 +31,7 @@ export default function useService(service: ServiceName, options: Options): {
   const [isStopping, setIsStopping] = useState<boolean>(false);
   const [startService] = useClientStartServiceMutation();
   const [stopService] = useStopServiceMutation();
+  const [notifyAlreadyStarted] = useNotifyServiceAlreadyStartedMutation();
 
   // isRunning is not working when stopService is called (backend issue)
   const { data: isRunning, isLoading, refetch, error } = useIsServiceRunningQuery({
@@ -90,6 +94,18 @@ export default function useService(service: ServiceName, options: Options): {
     }
   }
 
+  async function handleAlreadyStarted(){
+    if (isProcessing) {
+      return;
+    }
+
+    await notifyAlreadyStarted({
+      service,
+    }).unwrap();
+
+    refetch();
+  }
+
   useEffect(() => {
     if (disabled) {
       return;
@@ -99,6 +115,9 @@ export default function useService(service: ServiceName, options: Options): {
       handleStart();
     } else if (keepState === 'stopped' && keepState !== state && !isProcessing && isRunning === true) {
       handleStop();
+    } else if(keepState === 'running' && state === 'running' && !isProcessing && isRunning === true){
+      console.log('handleAlreadyStarted called!', keepState, state, isProcessing, disabled, isRunning);
+      handleAlreadyStarted();
     }
   }, [keepState, state, isProcessing, disabled, isRunning]);
 

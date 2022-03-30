@@ -68,7 +68,7 @@ export default class Client extends EventEmitter {
 
     if (this.options.services.length) {
       this.connect();
-    } 
+    }
   }
 
   getState(): {
@@ -185,12 +185,14 @@ export default class Client extends EventEmitter {
 
   async startService(serviceName: ServiceName, disableWait?: boolean) {
     if (this.started.has(serviceName)) {
-      return;
+      return true;
     }
 
     const response = await this.daemon.isRunning(serviceName);
     if (!response.isRunning) {
       log(`Starting service: ${serviceName}`);
+      // Note: If the service is already running,
+      // daemon in python code safely ignores the request.
       await this.daemon.startService(serviceName);
     }
 
@@ -204,7 +206,7 @@ export default class Client extends EventEmitter {
             origin: this.origin,
             destination: serviceName,
           }), 1000);
-          
+
           if (pingResponse.success) {
             break;
           }
@@ -218,6 +220,8 @@ export default class Client extends EventEmitter {
 
     this.started.add(serviceName);
     this.emit('state', this.getState());
+
+    return true;
   }
 
   private async startServices() {
@@ -265,6 +269,18 @@ export default class Client extends EventEmitter {
 
     this.started.delete(serviceName);
     this.emit('state', this.getState());
+  }
+
+  /*
+   * `notifyServiceAlreadyStarted` is called when
+   * - daemon/services are already started on previous GUI launch and,
+   * - user decided to keep services running background when he/she closed previous GUI
+   */
+  async notifyServiceAlreadyStarted(serviceName: ServiceName, disableWait?: boolean) {
+    // It looks like service is going to be started, but it never happens.
+    // Even if the service is already running, daemon in python code safely
+    // ignores request of starting the service.
+    return this.startService(serviceName, disableWait);
   }
 
   private handleOpen = async () => {
@@ -348,7 +364,7 @@ export default class Client extends EventEmitter {
   }
 
   async send(message: Message, timeout?: number, disableFormat?: boolean): Promise<Response> {
-    const { 
+    const {
       connected,
       options: {
         timeout: defaultTimeout,
@@ -376,7 +392,7 @@ export default class Client extends EventEmitter {
         setTimeout(() => {
           if (this.requests.has(requestId)) {
             this.requests.delete(requestId);
-  
+
             reject(new ErrorData(`The request ${requestId} has timed out ${currentTimeout / 1000} seconds.`));
           }
         }, currentTimeout);

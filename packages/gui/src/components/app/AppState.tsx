@@ -11,7 +11,7 @@ import AppSelectMode from './AppSelectMode';
 import ModeServices, { SimulatorServices } from '../../constants/ModeServices';
 
 const ALL_SERVICES = [
-  ServiceName.WALLET, 
+  ServiceName.WALLET,
   ServiceName.FULL_NODE,
   ServiceName.FARMER,
   ServiceName.HARVESTER,
@@ -26,7 +26,7 @@ export default function AppState(props: Props) {
   const { children } = props;
   const [close] = useCloseMutation();
   const [closing, setClosing] = useState<boolean>(false);
-  const { data: clienState = {}, isLoading: isClientStateLoading } = useGetStateQuery();
+  const { data: clientState = {}, isLoading: isClientStateLoading } = useGetStateQuery();
   const { data: keyringStatus, isLoading: isLoadingKeyringStatus } = useGetKeyringStatusQuery();
   const [isMigrationSkipped] = useSkipMigration();
   const [mode] = useMode();
@@ -63,7 +63,7 @@ export default function AppState(props: Props) {
     return specificRunningServiceStates.length === runServices.length;
   }, [servicesState, runServices]);
 
-  const isConnected = !isClientStateLoading && clienState?.state === ConnectionState.CONNECTED;
+  const isConnected = !isClientStateLoading && clientState?.state === ConnectionState.CONNECTED;
 
   async function handleClose(event) {
     if (closing) {
@@ -93,13 +93,13 @@ export default function AppState(props: Props) {
   if (closing) {
     return (
       <LayoutLoading hideSettings>
-        <Flex flexDirection="column" gap={2}> 
+        <Flex flexDirection="column" gap={2}>
           <Typography variant="body1" align="center">
             <Trans>Closing down services</Trans>
           </Typography>
           <Flex flexDirection="column" gap={0.5}>
             {!!ALL_SERVICES && ALL_SERVICES.map((service) => (
-              <Collapse key={service} in={!!clienState?.startedServices.includes(service)} timeout={{ enter: 0, exit: 1000 }}>
+              <Collapse key={service} in={!!clientState?.startedServices.includes(service)} timeout={{ enter: 0, exit: 1000 }}>
                 <Typography variant="body1" color="textSecondary"  align="center">
                   {ServiceHumanName[service]}
                 </Typography>
@@ -137,7 +137,7 @@ export default function AppState(props: Props) {
   }
 
   if (!isConnected) {
-    const { attempt } = clienState;
+    const { attempt } = clientState;
     return (
       <LayoutLoading>
         {!attempt ? (
@@ -167,7 +167,7 @@ export default function AppState(props: Props) {
   if (!allServicesRunning) {
     return (
       <LayoutLoading>
-        <Flex flexDirection="column" gap={2}> 
+        <Flex flexDirection="column" gap={2}>
           <Typography variant="body1" align="center">
             <Trans>Starting services</Trans>
           </Typography>

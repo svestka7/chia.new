@@ -63,11 +63,23 @@ export const clientApi = apiWithTag.injectEndpoints({
         client: true,
       }),
     }),
+
+    notifyServiceAlreadyStarted: build.mutation<boolean, {
+      service: ServiceName;
+      disableWait?: boolean;
+    }>({
+      query: ({service, disableWait}) => ({
+        command: 'notifyServiceAlreadyStarted',
+        args: [service, disableWait],
+        client: true,
+      }),
+    }),
   }),
 });
 
-export const { 
+export const {
   useCloseMutation,
   useGetStateQuery,
   useClientStartServiceMutation,
+  useNotifyServiceAlreadyStartedMutation,
 } = clientApi;
