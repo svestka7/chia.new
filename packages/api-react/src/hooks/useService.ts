@@ -116,7 +116,6 @@ export default function useService(service: ServiceName, options: Options): {
     } else if (keepState === 'stopped' && keepState !== state && !isProcessing && isRunning === true) {
       handleStop();
     } else if(keepState === 'running' && state === 'running' && !isProcessing && isRunning === true){
-      console.log('handleAlreadyStarted called!', keepState, state, isProcessing, disabled, isRunning);
       handleAlreadyStarted();
     }
   }, [keepState, state, isProcessing, disabled, isRunning]);
