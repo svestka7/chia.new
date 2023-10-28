@@ -23,6 +23,3 @@ if (os.platform() === 'win32') {
       console.error(`exec error: ${error}`);
       return;
     }
-    console.log(stdout);
-  });
-}
