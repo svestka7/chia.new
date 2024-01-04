@@ -32,8 +32,7 @@ body:
         - macOS
         - Linux
         - Pi4
-    validations:
-      required: true
+
   - type: dropdown
     id: ui
     attributes:
